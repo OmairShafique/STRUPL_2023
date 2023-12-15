@@ -1,0 +1,63 @@
+classdef Node
+
+    properties
+        id = 0; % node identification number 
+        coord = []; % coordinated of node
+        ebc = []; % essential boundary condition flags vector
+        nodalLoad = []; % applied load components vector [fx fy fz mx my mz]        
+        prescDispl = []; % prescribed displacement values vector [dx dy dz rx ry rz]
+       
+
+
+    end
+
+    methods
+        %Constuctor Method
+        function node = Node(id,coord,ebc,nodalLoad,prescDispl)
+            node.id = id;
+            node.coord = coord;
+            node.ebc = ebc;
+            node.nodalLoad = nodalLoad;
+            node.prescDispl= prescDispl;
+
+        end
+
+
+    end
+
+
+end
+
+classdef Element
+
+    properties 
+        length = 0;
+        width = 0;
+        number of values in x direction = 0;
+        number of values in y direction = 0;
+        number of degree of freedom per element = 0;
+        weight density = 0;
+        total number of elements connected = 0;
+        number of nodes in the element = 0;
+
+    end
+    methods
+        %constructor method 
+        function Element = Element ()
+
+        end 
+    end 
+
+
+    classdef Structure
+        properties
+            thickness = 0; %thickness of the structure
+            Elastic modulus = 0; % elastic modulus of the material
+            dimension = 2d or 3d;
+            fm = 0; % compressive strenght of mortar
+            ft =0; % tensile strength of mortar
+            
+
+
+
+

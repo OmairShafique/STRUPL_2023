@@ -140,8 +140,6 @@ for i = 1:number_of_active_boundry_conditions
         if is_rx_enabled
             nf(node_number_where_active(i),3) = dof_x_rotation(i);
         end
-
-
     else
         if(dim ==3) %Checking if 3D
             if is_dx_enabled
