@@ -7,13 +7,14 @@ classdef Node
         nodalLoad = []; % applied load components vector [fx fy fz mx my mz]  
         external_load = 0;
         prescDispl = []; % prescribed displacement values vector [dx dy dz rx ry rz]
+        
        
 
 
     end
 
     methods
-        %Constuctor Method
+        % Constuctor Method
         function node = Node(id,coord,ebc,nodalLoad,prescDispl)
             node.id = id;
             node.coord = coord;
