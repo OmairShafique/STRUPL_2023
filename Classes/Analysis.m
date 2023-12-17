@@ -2,12 +2,23 @@ classdef Analysis
 
     %% Properties and Value Types
     properties
+        thickness_of_plate = 0; %thickness of the structure
         number_of_dof_per_node = 0;
         dim = 0;
         Elastic_Modulus = 0;
         poissons_ratio = 0;
         fm = 0; % compressive strenght of mortar
         ft =0; % tensile strength of mortar
+        Boundary_Conditions = []; %boundary conditions matrix input directly in the form of a matrix
+        External_Load = []; %external load applied on the structure specifying node and the dof associated
+        gamma = 0; %weight gamma
+        geom = []; %geometry of the strucutre matrix
+        connec = []; %.
+        nodal_coordinate_values = []; %coordinates of all the nodes
+        nodal_connectivity_values = []; %element and node connectivity values
+
+
+
 
         % Fracture Parameters
         sigma_t = 0;
@@ -41,12 +52,16 @@ classdef Analysis
 
     %% Methods
     methods
-        function element = Element(Length_of_Element,Width_of_Element,number_of_degree_of_freedom_per_element,total_number_of_elements_connected,number_of_nodes_in_the_element)
-            element.Length_of_Element = Length_of_Element;
-            element.Width_of_Element = Width_of_Element;
-            element.number_of_degree_of_freedom_per_element = number_of_degree_of_freedom_per_element;
-            element.total_number_of_elements_connected = total_number_of_elements_connected;
-            element.number_of_nodes_in_the_element = number_of_nodes_in_the_element;
+        function analysis = Analysis(thickness_of_plate,number_of_dof_per_node,dim,Boundary_Conditions,External_Load,nodal_coordinate_values,nodal_connectivity_values)
+            analysis.thickness_of_plate = thickness_of_plate;
+            analysis.number_of_dof_per_node = number_of_dof_per_node;
+            analysis.dim = dim;
+            analysis.Boundary_Conditions = Boundary_Conditions;
+            analysis.External_Load = External_Load;
+
+            analysis.STRUCTURE = Structure(nodal_coordinate_values,nodal_connectivity_values);
         end
+
+
     end
 end

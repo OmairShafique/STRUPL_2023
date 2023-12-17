@@ -3,14 +3,10 @@ classdef Structure
     %% Properties and Value Types
     properties
         %% Input Values
-        thickness_of_plate = 0; %thickness of the structure
-        Boundary_Conditions = []; %boundary conditions matrix input directly in the form of a matrix
-        External_Load = []; %external load applied on the structure specifying node and the dof associated
-        gamma = 0; %weight gamma
+        Length = 0; %Assumed constant length of element
+        Width = 0; %Assumed constatn width of element
         nodal_coordinate_values = []; %coordinates of all the nodes
         nodal_connectivity_values = []; %element and node connectivity values
-        geom = []; %geometry of the strucutre matrix
-        connec = []; %
 
         Element_Type = []; % Element Type i.e. Triangular, Square etc
 
@@ -27,15 +23,26 @@ classdef Structure
     %% Methods
     methods
         % Constuctor Method
-        function structure = Structure(thickness_of_plate,Boundary_Conditions,External_Load,gamma,nodal_coordinate_values,nodal_connectivity_values,geom,connec)
-            structure.thickness_of_plate = thickness_of_plate;
-            structure.Boundary_Conditions = Boundary_Conditions;
-            structure.External_Load = External_Load;
-            structure.gamma = gamma;
+        function structure = Structure(nodal_coordinate_values,nodal_connectivity_values)
             structure.nodal_coordinate_values = nodal_coordinate_values;
             structure.nodal_connectivity_values = nodal_connectivity_values;
-            structure.geom = geom;
-            structure.connec = connec;
+        end
+
+        function this.PopulatingElements()
+            Elements = [1,this.Number_of_Elements];
+            for i = 1:this.Number_of_Elements
+                nodes = [1,number_of_nodes_per_element];
+                    for j = 1:number_of_nodes_per_element
+                        coord = this.nodal_coordinate_values(this.nodal_connectivity_values(i,j));
+                        id = this.nodal_connectivity_values(i,j);
+
+                        node = Node(id,coord);
+                        nodes(j) = node;
+                    end
+                    element = Element(this.Length,this.Width,nodes);
+                    Elements(i) = element;
+            end
+            this.ELEMENTS = Elements;
         end
     end
 end

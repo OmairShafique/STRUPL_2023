@@ -12,10 +12,9 @@ classdef Node
     %% Methods
     methods
         % Constuctor Method
-        function node = Node(id,coord,nodalLoad)
+        function node = Node(id,coord)
             node.id = id;
             node.coord = coord;
-            node.nodalLoad = nodalLoad;
         end
     end
 
