@@ -570,7 +570,7 @@ classdef Analysis
             % This function assembles the global stiffness matrix
             % Degrees_of_Freedom_Per_Elementdof = 12;
             % This function assembles the global stiffness matrix
-            
+
             for i=1:Degrees_of_Freedom_Per_Element
                 if g(i) ~= 0
                     for j=1: Degrees_of_Freedom_Per_Element
@@ -581,8 +581,151 @@ classdef Analysis
                 end
             end
         end
-       
-        % 
 
+        % Plot Mesh
+        function PlotMesh(coordinates,nodes)
+
+            %%INTRODUCE 3D
+            %--------------------------------------------------------------------------
+            % Code written by : Siva Srinivas Kolukula                                |
+            %                   Senior Research Fellow                                |
+            %                   Structural Mechanics Laboratory                       |
+            %                   Indira Gandhi Center for Atomic Research              |
+            %                   India                                                 |
+            % E-mail : allwayzitzme@gmail.com                                         |
+            %          http://sites.google.com/site/kolukulasivasrinivas/             |
+            %--------------------------------------------------------------------------
+            %--------------------------------------------------------------------------
+            % Purpose:
+            %         To plot the Finite Element Method Mesh
+            % Synopsis :
+            %           PlotMesh(coordinates,nodes)
+            % Variable Description:
+            %           coordinates - The nodal coordinates of the mesh
+            %           -----> coordinates = [node X Y]
+            %           nodes - The nodal connectivity of the elements
+            %           -----> nodes = [node1 node2......]
+            %--------------------------------------------------------------------------
+
+            nel = length(nodes) ;                  % number of elements
+            nnd = length(coordinates) ;          % total number of nodes in system
+            nne = size(nodes,2);                % number of nodes per element
+            %
+            % Initialization of the required matrices
+            X = zeros(nne,nel) ;
+            Y = zeros(nne,nel) ;
+
+            for iel=1:nel
+                for i=1:nne
+                    nd(i)=nodes(iel,i);         % extract connected node for (iel)-th element
+                    X(i,iel)=coordinates(nd(i),1);    % extract x value of the node
+                    Y(i,iel)=coordinates(nd(i),2);    % extract y value of the node
+                end
+            end
+            if nne==8
+
+                % Plotting the FEM mesh, diaplay Node numbers and Element numbers
+                f1 = figure ;
+                set(f1,'name','Mesh','numbertitle','off') ;
+                plot(X,Y,'k')
+                fill(X,Y,'w')
+
+                title('Finite Element Mesh');
+                axis off ;
+                k = nodes(:,1:end);
+                nd = k' ;
+                for i = 1:nel
+                    text(X(:,i),Y(:,i),int2str(nd(:,i)),'fontsize',8,'color','k');
+                    text(sum(X(:,i))/8,sum(Y(:,i))/8,int2str(i),'fontsize',10,'color','r') ;
+                end
+            elseif nne==4
+                % Plotting the FEM mesh, diaplay Node numbers and Element numbers
+                f1 = figure ;
+                set(f1,'name','Mesh','numbertitle','off') ;
+                plot(X,Y,'k')
+                fill(X,Y,'w')
+
+                title('Finite Element Mesh') ;
+                axis off ;
+                k = nodes(:,1:end);
+                nd = k' ;
+                for i = 1:nel
+                    text(X(:,i),Y(:,i),int2str(nd(:,i)),'fontsize',8,'color','k');
+                    text(sum(X(:,i))/4,sum(Y(:,i))/4,int2str(i),'fontsize',10,'color','r') ;
+                end
+            elseif nne==3
+                % Plotting the FEM mesh, diaplay Node numbers and Element numbers
+                f1 = figure ;
+                set(f1,'name','Mesh','numbertitle','off') ;
+                plot(X,Y,'k')
+                fill(X,Y,'w')
+
+                title('Finite Element Mesh') ;
+                axis off ;
+                k = nodes(:,1:end);
+                nd = k' ;
+                for i = 1:nel
+                    text(X(:,i),Y(:,i),int2str(nd(:,i)),'fontsize',8,'color','k');
+                    text(sum(X(:,i))/3,sum(Y(:,i))/3,int2str(i),'fontsize',10,'color','r') ;
+                end
+            end
+
+        end
+
+        % Elastic Solve
+        function [delta,Reaction,node_displacement,SIGMA,STRAIN] = Elastic_solve()
+
+
+            % dealta is related to nodal dislplacement
+            delta = KK\fg ; % solve for unknown displacements
+            Reaction=KK*delta-fg;
+            %
+            node_displacement=zeros(nnd,2);
+            %
+            for i=1: nnd %
+                if nf(i,1) == 0 %
+                    x_disp =0.; %
+                else
+                    x_disp = delta(nf(i,1)); %
+                end
+                %
+                if nf(i,2) == 0 %
+                    y_disp = 0.; %
+                else
+                    y_disp = delta(nf(i,2)); %
+                end
+                node_displacement(i,:) =[x_disp y_disp];
+            end
+            %
+            % Retrieve the x_coord and y_disp of the nodes located on the neutral axis
+            %
+            k = 0;
+            for i=1:nnd
+                if geom(i,2)== 0.
+                    k=k+1;
+                    x_coord(k) = geom(i,1);
+                    vertical_disp(k)=node_displacement(i,2);
+                end
+            end
+            %% Compute stress and strain %%
+            %
+            for i=1:nel
+                [bee,g,A] = elem_T3(i); % Form strain matrix, and steering vector
+                eld=zeros(eldof,1); % Initialize element displacement to zero
+                for m=1:eldof
+                    if g(m)==0
+                        eld(m)=0.;
+                    else %
+                        eld(m)=delta(g(m)); % Retrieve element displacement
+                    end
+                end
+                %
+                eps=bee*eld; % Compute strains
+                STRAIN(i,:)=eps ; % Store strains for all elements
+                sigma=dee*eps; % Compute stresses
+                SIGMA(i,:)=sigma ; % Store stress for all elements
+            end
+
+        end
     end
 end
