@@ -19,9 +19,6 @@ classdef Analysis
         ngps = 0; % Number of Gauss Points Sheer
         ngpb = 0; % Number of Gauss Points Bending
 
-
-
-
         % Fracture Parameters
         sigma_t = 0;
         Percentage_Limit_Tension = 0;
@@ -169,7 +166,7 @@ classdef Analysis
         end
 
         % GaussFunction
-        function[samp]=gauss(ngp)
+        function [samp]=gauss(ngp)
             %
             % This function returns the abscissas and weights of the Gauss
             % points for ngp equal up to 4
@@ -288,7 +285,7 @@ classdef Analysis
         end
 
         % form dees
-        function[dees] = formdees(Elatic_Modulus,Poisson_Ratio,thickness_of_Plate)
+        function [dees] = formdees(Elatic_Modulus,Poisson_Ratio,thickness_of_Plate)
             G= Elatic_Modulus/(2*(1.+Poisson_Ratio));
             dees=G* [thickness_of_Plate     0 ;...
                 0     thickness_of_Plate];
@@ -548,7 +545,7 @@ classdef Analysis
         end
 
         % form bees and
-        function[bees] = formbees(deriv,fun,Degrees_of_Freedom_Per_Element)
+        function [bees] = formbees(deriv,fun,Degrees_of_Freedom_Per_Element)
 
             bees=zeros(2,Degrees_of_Freedom_Per_Element);
             for m=1:this.number_of_nodes_per_element
@@ -727,5 +724,125 @@ classdef Analysis
             end
 
         end
+
+        % Form B Matrix
+        function [B_Matrix] = form_B_Matrix()
+            % This function assembles the matrix B for plane problems from the
+            % derivatives of the shape functions in global coordinates
+            % for a thick plate element (bending action)
+
+            if this.STRUCTURE.Element_type==3 && this.ngpb==0
+
+                x1 = this.geom(this.connec(iel,1),1); y1 = this.geom(this.connec(iel,1),2);
+                x2 = this.geom(this.connec(iel,2),1); y2 = this.geom(this.connec(iel,2),2);
+                x3 = this.geom(this.connec(iel,3),1); y3 = this.geom(this.connec(iel,3),2);
+                %
+                A = (0.5)*det([1 x1 y1; ...
+                    1 x2 y2; ...
+                    1 x3 y3]);
+                %
+                m11 = (x2*y3 - x3*y2)/(2*A);
+                m21 = (x3*y1 - x1*y3)/(2*A);
+                m31 = (x1*y2 - y1*x2)/(2*A);
+                m12 = (y2 - y3)/(2*A);
+                m22 = (y3 - y1)/(2*A);
+                m32 = (y1 - y2)/(2*A);
+                m13 = (x3 - x2)/(2*A);
+                m23 = (x1 - x3)/(2*A);
+                m33 = (x2 -x1)/(2*A);
+                %
+                B_Matrix = [ m12 0 m22 0 m32 0; ...
+                    0 m13 0 m23 0 m33; ...
+                    m13 m12 m23 m22 m33 m32] ;
+            end
+            if this.Element_type~=3 && this.ngpb~=0
+
+                B_Matrix=zeros(3,this.STRUCTURE.Degrees_of_Freedom_Per_Element);
+                for m=1:this.number_of_nodes_per_element
+                    k=3*m;
+                    j=k-1;
+                    x=deriv(1,m);
+                    B_Matrix(1,j)=x;
+                    B_Matrix(3,k)=x;
+                    y=deriv(2,m);
+                    B_Matrix(2,k)=y;
+                    B_Matrix(3,j)=y;
+                end
+            end
+            if this.Element_type~=3 && this.ngps~=0
+                B_Matrix=zeros(2,this.STRUCTURE.Degrees_of_Freedom_Per_Element);
+                for m=1:this.number_of_nodes_per_element
+                    k=3*m;
+                    j=k-1;
+                    i=k-2;
+                    x=deriv(1,m); y=deriv(2,m);
+                    B_Matrix(2,i)=-x;
+                    B_Matrix(1,i)=-y;
+                    B_Matrix(1,k) = fun(m);
+                    B_Matrix(2,j) = fun(m);
+                end
+            end
+            % End function form_B_Matrix
+
+
+
+        end
+
+        % Form D Matrix
+        function [D_Matrix] = form_D_Matrix ()
+            %
+            % This function forms the elasticity matrix in a plate element
+            % concerning also shear and bending actions
+            %
+            if this.Element_type==3 && this.ngpb==0
+                c = this.Elastic_Modulus/(1.- this.Poisson_Ratio * this.Poisson_Ratio);
+                %
+                D_Matrix=c*[1 this.Poisson_Ratio 0. ;...
+                    this.Poisson_Ratio 1 0. ;...
+                    0. 0. .5*(1.- this.Poisson_Ratio)];
+
+            elseif this.Element_type~=3 && this.ngpb~=0
+                DR= this.Elastic_Modulus*(this.thickness_of_Plate^3)/(12*(1.-this.Poisson_Ratio*this.Poisson_Ratio));
+                %
+                D_Matrix=DR*[1 this.Poisson_Ratio 0. ;...
+                    this.Poisson_Ratio 1 0. ;...
+                    0. 0. (1.- this.Poisson_Ratio)/2] ;
+            elseif this.Element_type~=3 && this.ngps~=0
+                G= this.Elatic_Modulus/(2*(1. + this.Poisson_Ratio));
+                %
+                D_Matrix=G* [this.thickness_of_Plate     0 ;...
+                    0     this.thickness_of_Plate];
+            end
+
+        end
+
+        % Forces at nodes plates
+        function [MX, MY, MXY, QX, QY]=Forces_at_nodes_plate(Element_Forces)
+            % This function averages the stresses at the nodes
+            for k = 1:this.STRUCTURE.Number_of_Nodes
+                mx = 0. ; my = 0.; mxy = 0.; qx = 0.; qy = 0.;
+                ne = 0;
+                for iel = 1:this.STRUCTURE.Number_of_Elements
+                    for jel=1:this.STRUCTURE.number_of_nodes_per_element
+                        if this.connec(iel,jel) == k
+                            ne=ne+1;
+                            mx = mx + Element_Forces(iel,1);
+                            my = my + Element_Forces(iel,2);
+                            mxy = mxy + Element_Forces(iel,3);
+                            qx = qx + Element_Forces(iel,4);
+                            qy = qy + Element_Forces(iel,5);
+                        end
+                    end
+                end
+                MX(k,1) = mx/ne;
+                MY(k,1) = my/ne;
+                MXY(k,1) = mxy/ne;
+                QX(k,1) = qx/ne;
+                QY(k,1) = qy/ne;
+            end
+        end
+    
+        % 
+    
     end
 end
