@@ -273,6 +273,7 @@ current_row = 1;
 
 fg_gravity = fg_matrix_calculator(Number_of_Elements,nodal_connectivity_values,Number_of_Nodes,nf);
 
+%% ADD TO ENGINE FUNCTION
 Global_force_vector = fg_gravity(1:total_numbers_of_active_dof,1) + Global_force_vector;
 
 assignin('base','fg_gravity',fg_gravity);

@@ -7,5 +7,4 @@ G= Elatic_Modulus/(2*(1.+Poisson_Ratio));
 %
 dees=G* [thickness_of_Plate     0 ;...
           0     thickness_of_Plate];
-%
-% end function fromdees
+end

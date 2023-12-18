@@ -27,9 +27,7 @@ xip=(1.+xi);
 %
 
 switch (Element_Type)
-<<<<<<< HEAD
-    case (3) % for triangular element also to be used for triangle but ngps or ngpb is different from 0
-=======
+
     case (3) % for triangular element
         if Element_Type==3 && dim==2 && ngpb ~=0 && ngps ~=0
             % shape functions
@@ -37,7 +35,7 @@ switch (Element_Type)
             fun(2) =  xi;
             fun(3) =  eta;
             % derivatives
->>>>>>> d15f757c9cc3da402168f8d03084c38dfdd2cd3b
+
 
             der(1,1)= -1.; der(1,2)=-1;
             der(2,1)= 1.; der(2,2)= 0;

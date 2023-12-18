@@ -10,6 +10,8 @@ classdef Structure
 
         Element_Type = []; % Element Type i.e. Triangular, Square etc
 
+        number_of_nodes_per_element = 0;
+
         ELEMENTS;
 
         %% Infered Values

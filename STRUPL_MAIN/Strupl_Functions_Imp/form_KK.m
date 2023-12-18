@@ -17,5 +17,6 @@ for i=1:Degrees_of_Freedom_Per_Element
         end
     end
 end
+end
 %
 %%%%%%%%%%%%% end function form_KK %%%%%%%%%%%%%%%%%
