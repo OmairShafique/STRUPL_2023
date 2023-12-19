@@ -14,8 +14,6 @@ classdef Analysis
         gamma = 0; %weight gamma
         geom = []; %geometry of the strucutre matrix
         connec = []; %.
-        nodal_coordinate_values = []; %coordinates of all the nodes
-        nodal_connectivity_values = []; %element and node connectivity values
         ngps = 0; % Number of Gauss Points Sheer
         ngpb = 0; % Number of Gauss Points Bending
         Length_of_Element = 0;
@@ -50,6 +48,8 @@ classdef Analysis
     end
 
     %% Methods
+
+
     methods
         % Constructor
         function analysis = Analysis(Length_of_Element,Width_of_Element ...
@@ -62,11 +62,14 @@ classdef Analysis
             analysis.External_Load = External_Load;
             analysis.Length_of_Element = Length_of_Element;
             analysis.Width_of_Element = Width_of_Element;
+            analysis.geom = nodal_coordinate_values;
+            analysis.connec = nodal_connectivity_values;
 
             analysis.STRUCTURE = Structure(Length_of_Element,Width_of_Element,nodal_coordinate_values,nodal_connectivity_values,Element_Type);
-
         end
+    end
 
+    methods (Static)
         % Main Class where all logic will follow
         function Engine()
             [nf,total_numbers_of_active_dof,nf_g] = Populating_nf();
@@ -1034,8 +1037,6 @@ classdef Analysis
                 QY(k,1) = qy/ne;
             end
         end
-
-        %
 
     end
 end

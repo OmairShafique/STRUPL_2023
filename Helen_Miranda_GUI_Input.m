@@ -122,14 +122,29 @@ analysis_main = Analysis(Length_of_Element,Width_of_element ...
     ,thickness_of_plate,nodof,dim,Boundary_Conditions ...
     ,External_Load,nodal_coordinate_values,nodal_connectivity_values,Element_Type);
 
+analysis_main.Elastic_Modulus = evalin('base','Elastic_Modulus');
+analysis_main.poissons_ratio = evalin('base','Possions_Ratio');
 
+analysis_main.sigma_t = evalin('base','sigma_t');
+analysis_main.Percentage_Limit_Tension = evalin('base','Percentage_Limit_Tension');
+analysis_main.Percentage_Limit_Shear = evalin('base','Percentage_Limit_Shear');
+analysis_main.tau = evalin('base','tau');
+analysis_main.Percentage_Fracture_Energy_Traction = evalin('base','Percentage_Fracture_Energy_Traction');
+analysis_main.d_u = evalin('base','d_u');
+analysis_main.Percentage_Ultimate_Deformation_Maximum_Step = evalin('base','Percentage_Ultimate_Deformation_Maximum_Step');
+analysis_main.tol = evalin('base','tol');
+analysis_main.gamma = evalin('base','weigth_density');
+
+analysis_main.is_dx_enabled = evalin('base','is_dx_enabled');
+analysis_main.is_dy_enabled = evalin('base','is_dy_enabled');
+analysis_main.is_dz_enabled = evalin('base','is_dz_enabled');
+analysis_main.is_rx_enabled = evalin('base','is_rx_enabled');
+analysis_main.is_ry_enabled = evalin('base','is_ry_enabled');
+analysis_main.is_rz_enabled = evalin('base','is_rz_enabled');
 
 analysis_main.Engine();
 
-%Helen_Miranda_4_Quadilateral_No_Inputs
-
-
-
+% Helen_Miranda_4_Quadilateral_No_Inputs
 
 
 % --- Executes during object creation, after setting all properties.
