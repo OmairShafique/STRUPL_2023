@@ -18,6 +18,7 @@ classdef Element
             element.Length_of_Element = Length_of_Element;
             element.Width_of_Element = Width_of_Element; 
             element.NODES = NODES;
+            element.Nodes_per_Element = length(NODES);
         end
     end
 end

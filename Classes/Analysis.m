@@ -52,7 +52,9 @@ classdef Analysis
     %% Methods
     methods
         % Constructor
-        function analysis = Analysis(Length_of_Element,Width_of_Element,thickness_of_plate,number_of_dof_per_node,dim,Boundary_Conditions,External_Load,nodal_coordinate_values,nodal_connectivity_values,Element_Type)
+        function analysis = Analysis(Length_of_Element,Width_of_Element ...
+                ,thickness_of_plate,number_of_dof_per_node,dim,Boundary_Conditions ...
+                ,External_Load,nodal_coordinate_values,nodal_connectivity_values,Element_Type)
             analysis.thickness_of_plate = thickness_of_plate;
             analysis.number_of_dof_per_node = number_of_dof_per_node;
             analysis.dim = dim;
@@ -62,7 +64,7 @@ classdef Analysis
             analysis.Width_of_Element = Width_of_Element;
 
             analysis.STRUCTURE = Structure(Length_of_Element,Width_of_Element,nodal_coordinate_values,nodal_connectivity_values,Element_Type);
-            
+
         end
 
         % Main Class where all logic will follow

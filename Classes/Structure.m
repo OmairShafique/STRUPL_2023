@@ -43,8 +43,8 @@ classdef Structure
 
             
 
-
-            Elements = Element(1,structure.Number_of_Elements);
+            node_1 = Node(1,1);
+            Elements = Element(1,structure.Number_of_Elements,node_1);
             for i = 1:structure.Number_of_Elements
                 nodes = Node(1,number_of_nodes_per_element);
                 for j = 1:number_of_nodes_per_element
@@ -56,7 +56,7 @@ classdef Structure
                 element = Element(structure.Length,structure.Width,nodes);
                 Elements(i) = element;
             end
-            structure.ELEMENTS = Elements;
+            structure.ELEMENTS = Elements';
         end
     end
 end
