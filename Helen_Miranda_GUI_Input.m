@@ -106,7 +106,26 @@ function RUN_Button_Callback(hObject, eventdata, handles)
 % hObject    handle to RUN_Button (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-Helen_Miranda_4_Quadilateral_No_Inputs
+
+thickness_of_plate = evalin('base','thickness_of_plate');
+nodof = evalin('base','nodof');
+dim = evalin('base','dim');
+Boundary_Conditions = evalin('base','Boundary_Conditions');
+External_Load = evalin('base','External_Load');
+nodal_coordinate_values = evalin('base','nodal_coordinate_values');
+nodal_connectivity_values = evalin('base','nodal_connectivity_values');
+Length_of_Element = evalin('base','Length_of_Element');
+Width_of_element = evalin('base','Width_of_element');
+Element_Type = evalin('base','Element_Type');
+
+analysis_main = Analysis(Length_of_Element,Width_of_element ...
+    ,thickness_of_plate,nodof,dim,Boundary_Conditions ...
+    ,External_Load,nodal_coordinate_values,nodal_connectivity_values,Element_Type);
+
+
+
+analysis_main.Engine();
+
 %Helen_Miranda_4_Quadilateral_No_Inputs
 
 
@@ -301,7 +320,6 @@ function ExternalLoadFileNameLabel_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to ExternalLoadFileNameLabel (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
-
 % Hint: edit controls usually have a white background on Windows.
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))

@@ -8,43 +8,55 @@ classdef Structure
         nodal_coordinate_values = []; %coordinates of all the nodes
         nodal_connectivity_values = []; %element and node connectivity values
 
-        Element_Type = []; % Element Type i.e. Triangular, Square etc
 
         number_of_nodes_per_element = 0;
 
         ELEMENTS;
 
         %% Infered Values
-        Number_of_Elements = length(nodal_connectivity_values); % Number of Elements in the Structure
-        Number_of_Nodes = length(nodal_coordinate_values); % Number of nodes in the structure
-        Total_System_Degrees_of_Freedom = Number_of_Nodes * number_of_dof_per_node; % Total System Degrees of Freedom calculated
-        Degrees_of_Freedom_Per_Element = number_of_nodes_per_element * number_of_dof_per_node; % Calculating the Degrees of Freedom Per Element
+
+        Number_of_Elements = 0; % Number of Elements in the Structure
+        Number_of_Nodes = 0; % Number of nodes in the structure
+        Total_System_Degrees_of_Freedom = 0; % Total System Degrees of Freedom calculated
+        Degrees_of_Freedom_Per_Element = 0; % Calculating the Degrees of Freedom Per Element
+
+
+
 
     end
 
     %% Methods
     methods
         % Constuctor Method
-        function structure = Structure(nodal_coordinate_values,nodal_connectivity_values)
+        function structure = Structure(Length,Width,nodal_coordinate_values,nodal_connectivity_values,number_of_nodes_per_element)
+            structure.Length = Length;
+            structure.Width = Width;
             structure.nodal_coordinate_values = nodal_coordinate_values;
             structure.nodal_connectivity_values = nodal_connectivity_values;
-        end
+            structure.number_of_nodes_per_element = number_of_nodes_per_element;
 
-        function this.PopulatingElements()
-            Elements = [1,this.Number_of_Elements];
-            for i = 1:this.Number_of_Elements
-                nodes = [1,number_of_nodes_per_element];
-                    for j = 1:number_of_nodes_per_element
-                        coord = this.nodal_coordinate_values(this.nodal_connectivity_values(i,j));
-                        id = this.nodal_connectivity_values(i,j);
+            structure.Number_of_Elements = length(nodal_connectivity_values); % Number of Elements in the Structure
+            structure.Number_of_Nodes = length(nodal_coordinate_values); % Number of nodes in the structure
+            % structure.Total_System_Degrees_of_Freedom = structure.Number_of_Nodes * structure.number_of_dof_per_node; % Total System Degrees of Freedom calculated
+            % structure.Degrees_of_Freedom_Per_Element = number_of_nodes_per_element * number_of_dof_per_node; % Calculating the Degrees of Freedom Per Element
 
-                        node = Node(id,coord);
-                        nodes(j) = node;
-                    end
-                    element = Element(this.Length,this.Width,nodes);
-                    Elements(i) = element;
+
+            
+
+
+            Elements = Element(1,structure.Number_of_Elements);
+            for i = 1:structure.Number_of_Elements
+                nodes = Node(1,number_of_nodes_per_element);
+                for j = 1:number_of_nodes_per_element
+                    coord = structure.nodal_coordinate_values(structure.nodal_connectivity_values(i,j),:);
+                    id = structure.nodal_connectivity_values(i,j);
+                    node = Node(id,coord);
+                    nodes(j) = node;
+                end
+                element = Element(structure.Length,structure.Width,nodes);
+                Elements(i) = element;
             end
-            this.ELEMENTS = Elements;
+            structure.ELEMENTS = Elements;
         end
     end
 end

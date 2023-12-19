@@ -19,9 +19,6 @@ classdef Analysis
         ngps = 0; % Number of Gauss Points Sheer
         ngpb = 0; % Number of Gauss Points Bending
 
-
-
-
         % Fracture Parameters
         sigma_t = 0;
         Percentage_Limit_Tension = 0;
@@ -63,7 +60,60 @@ classdef Analysis
 
         % Main Class where all logic will follow
         function Engine()
+            [nf,total_numbers_of_active_dof,nf_g] = Populating_nf();
 
+            [Load,Global_force_vector,Gravity_Load] = Populating_Load(nf_g);
+
+            curent_row = 1;
+
+            fg_gravity = fg_matrix_calculator();
+
+            deeb=formdeeb(this.Elastic_Modulus,this.Poissons_Ratio,this.thickness_of_plate); % Matrix of elastic properties for plate bending
+            dees=formdees(this.Elastic_Modulus,this.Poissons_Ratio,this.thickness_of_plate); % Matrix of elastic properties for plate shear
+
+            % 1.Form the matrix containing the abscissas and the weights of Gauss points
+            sampb = gauss(ngpb);
+            samps = gauss(ngps);
+
+            % 2. initialize the global stiffness matrix to zero
+            Global_stiffness_matrix = zeros(total_numbers_of_active_dof,total_numbers_of_active_dof);
+
+            for iel = 1:this.STRUCTURE.Number_of_Elements
+                if this.Element_Type == 3 && this.ngpb == 0
+                    [bee,fun_3,g,A,d_3] = elem_T3(iel);
+                    dee=formdeeb(Elastic_Modulus,Poissons_Ratio,thickness_of_plate);
+                    ke=thickness_of_plate*A*bee'*dee*bee; % Integrate stiffness matrix
+                    Global_stiffness_matrix=form_KK(Global_stiffness_matrix,ke, g);
+                end
+                [coord, g] = platelem_q4(iel); % coordinates of the nodes of element i,
+                % and its steering vector
+                keb = zeros(this.Degrees_of_Freedom_Per_Element,this.Degrees_of_Freedom_Per_Element) ; % Initialize the element bending
+                % stiffness matrix to zero
+                kes=zeros(this.Degrees_of_Freedom_Per_Element,this.Degrees_of_Freedom_Per_Element) ; % Initialize the element Shear
+                % stiffness matrix to zero
+
+                %--------------------------------------------------------------------------
+                % Integrate element Shear stiffness and assemble it in global matrix
+                %--------------------------------------------------------------------------
+                for ig=1: ngps
+                    wi = samps(ig,2);
+                    for jg=1: ngps
+                        wj=samps(jg,2);
+                        [der,fun] = fmquad(samps, this.Element_Type, this.dim, ig,jg); % Derivative of shape functions
+                        % in local coordinates
+                        jac=der'*coord;                    % Compute Jacobian matrix
+                        d=det(jac);                       % Compute determinant of
+                        % Jacobian matrix
+                        jac1=inv(jac);                    % Compute inverse of the
+                        % Jacobian
+                        deriv=jac1*der';                   % Derivative of shape functions
+                        % in global coordinates
+                        bees=formbees(deriv,fun,this.number_of_nodes_per_element,this.Degrees_of_Freedom_Per_Element); % Form matrix [B]
+                        kes=kes + (5/6)*d*wi*wj*bees'*dees*bees; % Integrate stiffness matrix
+                    end
+                end
+                Global_stiffness_matrix=form_KK(Global_stiffness_matrix,kes, g); % assemble global stiffness matrix
+            end
         end
 
         % Populating nf
@@ -169,7 +219,7 @@ classdef Analysis
         end
 
         % GaussFunction
-        function[samp]=gauss(ngp)
+        function [samp]=gauss(ngp)
             %
             % This function returns the abscissas and weights of the Gauss
             % points for ngp equal up to 4
@@ -288,7 +338,7 @@ classdef Analysis
         end
 
         % form dees
-        function[dees] = formdees(Elatic_Modulus,Poisson_Ratio,thickness_of_Plate)
+        function [dees] = formdees(Elatic_Modulus,Poisson_Ratio,thickness_of_Plate)
             G= Elatic_Modulus/(2*(1.+Poisson_Ratio));
             dees=G* [thickness_of_Plate     0 ;...
                 0     thickness_of_Plate];
@@ -351,7 +401,7 @@ classdef Analysis
         end
 
         % Plate_q4
-        function[coord,g] = platelem_q4(i)
+        function [coord,g] = platelem_q4(i)
             %
             % This function returns the coordinates of the nodes of element i
             % and its steering vector
@@ -548,8 +598,8 @@ classdef Analysis
         end
 
         % form bees and
-        function[bees] = formbees(deriv,fun,Degrees_of_Freedom_Per_Element)
-            
+        function [bees] = formbees(deriv,fun,Degrees_of_Freedom_Per_Element)
+
             bees=zeros(2,Degrees_of_Freedom_Per_Element);
             for m=1:this.number_of_nodes_per_element
                 k=this.number_of_dof_per_node*m;
@@ -565,8 +615,287 @@ classdef Analysis
 
         end
 
-        % 
+        % form KK Matrix
+        function [Global_stiffness_matrix] = form_KK(Global_stiffness_matrix, kg, g)
+            % This function assembles the global stiffness matrix
+            % Degrees_of_Freedom_Per_Elementdof = 12;
+            % This function assembles the global stiffness matrix
 
-    
-    
+            for i=1:Degrees_of_Freedom_Per_Element
+                if g(i) ~= 0
+                    for j=1: Degrees_of_Freedom_Per_Element
+                        if g(j) ~= 0
+                            Global_stiffness_matrix(g(i),g(j))= Global_stiffness_matrix(g(i),g(j)) + kg(i,j);
+                        end
+                    end
+                end
+            end
+        end
+
+        % Plot Mesh
+        function PlotMesh(coordinates,nodes)
+
+            %%INTRODUCE 3D
+            %--------------------------------------------------------------------------
+            % Code written by : Siva Srinivas Kolukula                                |
+            %                   Senior Research Fellow                                |
+            %                   Structural Mechanics Laboratory                       |
+            %                   Indira Gandhi Center for Atomic Research              |
+            %                   India                                                 |
+            % E-mail : allwayzitzme@gmail.com                                         |
+            %          http://sites.google.com/site/kolukulasivasrinivas/             |
+            %--------------------------------------------------------------------------
+            %--------------------------------------------------------------------------
+            % Purpose:
+            %         To plot the Finite Element Method Mesh
+            % Synopsis :
+            %           PlotMesh(coordinates,nodes)
+            % Variable Description:
+            %           coordinates - The nodal coordinates of the mesh
+            %           -----> coordinates = [node X Y]
+            %           nodes - The nodal connectivity of the elements
+            %           -----> nodes = [node1 node2......]
+            %--------------------------------------------------------------------------
+
+            nel = length(nodes) ;                  % number of elements
+            nnd = length(coordinates) ;          % total number of nodes in system
+            nne = size(nodes,2);                % number of nodes per element
+            %
+            % Initialization of the required matrices
+            X = zeros(nne,nel) ;
+            Y = zeros(nne,nel) ;
+
+            for iel=1:nel
+                for i=1:nne
+                    nd(i)=nodes(iel,i);         % extract connected node for (iel)-th element
+                    X(i,iel)=coordinates(nd(i),1);    % extract x value of the node
+                    Y(i,iel)=coordinates(nd(i),2);    % extract y value of the node
+                end
+            end
+            if nne==8
+
+                % Plotting the FEM mesh, diaplay Node numbers and Element numbers
+                f1 = figure ;
+                set(f1,'name','Mesh','numbertitle','off') ;
+                plot(X,Y,'k')
+                fill(X,Y,'w')
+
+                title('Finite Element Mesh');
+                axis off ;
+                k = nodes(:,1:end);
+                nd = k' ;
+                for i = 1:nel
+                    text(X(:,i),Y(:,i),int2str(nd(:,i)),'fontsize',8,'color','k');
+                    text(sum(X(:,i))/8,sum(Y(:,i))/8,int2str(i),'fontsize',10,'color','r') ;
+                end
+            elseif nne==4
+                % Plotting the FEM mesh, diaplay Node numbers and Element numbers
+                f1 = figure ;
+                set(f1,'name','Mesh','numbertitle','off') ;
+                plot(X,Y,'k')
+                fill(X,Y,'w')
+
+                title('Finite Element Mesh') ;
+                axis off ;
+                k = nodes(:,1:end);
+                nd = k' ;
+                for i = 1:nel
+                    text(X(:,i),Y(:,i),int2str(nd(:,i)),'fontsize',8,'color','k');
+                    text(sum(X(:,i))/4,sum(Y(:,i))/4,int2str(i),'fontsize',10,'color','r') ;
+                end
+            elseif nne==3
+                % Plotting the FEM mesh, diaplay Node numbers and Element numbers
+                f1 = figure ;
+                set(f1,'name','Mesh','numbertitle','off') ;
+                plot(X,Y,'k')
+                fill(X,Y,'w')
+
+                title('Finite Element Mesh') ;
+                axis off ;
+                k = nodes(:,1:end);
+                nd = k' ;
+                for i = 1:nel
+                    text(X(:,i),Y(:,i),int2str(nd(:,i)),'fontsize',8,'color','k');
+                    text(sum(X(:,i))/3,sum(Y(:,i))/3,int2str(i),'fontsize',10,'color','r') ;
+                end
+            end
+
+        end
+
+        % Elastic Solve
+        function [delta,Reaction,node_displacement,SIGMA,STRAIN] = Elastic_solve()
+
+
+            % dealta is related to nodal dislplacement
+            delta = KK\fg ; % solve for unknown displacements
+            Reaction=KK*delta-fg;
+            %
+            node_displacement=zeros(nnd,2);
+            %
+            for i=1: nnd %
+                if nf(i,1) == 0 %
+                    x_disp =0.; %
+                else
+                    x_disp = delta(nf(i,1)); %
+                end
+                %
+                if nf(i,2) == 0 %
+                    y_disp = 0.; %
+                else
+                    y_disp = delta(nf(i,2)); %
+                end
+                node_displacement(i,:) =[x_disp y_disp];
+            end
+            %
+            % Retrieve the x_coord and y_disp of the nodes located on the neutral axis
+            %
+            k = 0;
+            for i=1:nnd
+                if geom(i,2)== 0.
+                    k=k+1;
+                    x_coord(k) = geom(i,1);
+                    vertical_disp(k)=node_displacement(i,2);
+                end
+            end
+            %% Compute stress and strain %%
+            %
+            for i=1:nel
+                [bee,g,A] = elem_T3(i); % Form strain matrix, and steering vector
+                eld=zeros(eldof,1); % Initialize element displacement to zero
+                for m=1:eldof
+                    if g(m)==0
+                        eld(m)=0.;
+                    else %
+                        eld(m)=delta(g(m)); % Retrieve element displacement
+                    end
+                end
+                %
+                eps=bee*eld; % Compute strains
+                STRAIN(i,:)=eps ; % Store strains for all elements
+                sigma=dee*eps; % Compute stresses
+                SIGMA(i,:)=sigma ; % Store stress for all elements
+            end
+
+        end
+
+        % Form B Matrix
+        function [B_Matrix] = form_B_Matrix()
+            % This function assembles the matrix B for plane problems from the
+            % derivatives of the shape functions in global coordinates
+            % for a thick plate element (bending action)
+
+            if this.STRUCTURE.Element_type==3 && this.ngpb==0
+
+                x1 = this.geom(this.connec(iel,1),1); y1 = this.geom(this.connec(iel,1),2);
+                x2 = this.geom(this.connec(iel,2),1); y2 = this.geom(this.connec(iel,2),2);
+                x3 = this.geom(this.connec(iel,3),1); y3 = this.geom(this.connec(iel,3),2);
+                %
+                A = (0.5)*det([1 x1 y1; ...
+                    1 x2 y2; ...
+                    1 x3 y3]);
+                %
+                m11 = (x2*y3 - x3*y2)/(2*A);
+                m21 = (x3*y1 - x1*y3)/(2*A);
+                m31 = (x1*y2 - y1*x2)/(2*A);
+                m12 = (y2 - y3)/(2*A);
+                m22 = (y3 - y1)/(2*A);
+                m32 = (y1 - y2)/(2*A);
+                m13 = (x3 - x2)/(2*A);
+                m23 = (x1 - x3)/(2*A);
+                m33 = (x2 -x1)/(2*A);
+                %
+                B_Matrix = [ m12 0 m22 0 m32 0; ...
+                    0 m13 0 m23 0 m33; ...
+                    m13 m12 m23 m22 m33 m32] ;
+            end
+            if this.Element_type~=3 && this.ngpb~=0
+
+                B_Matrix=zeros(3,this.STRUCTURE.Degrees_of_Freedom_Per_Element);
+                for m=1:this.number_of_nodes_per_element
+                    k=3*m;
+                    j=k-1;
+                    x=deriv(1,m);
+                    B_Matrix(1,j)=x;
+                    B_Matrix(3,k)=x;
+                    y=deriv(2,m);
+                    B_Matrix(2,k)=y;
+                    B_Matrix(3,j)=y;
+                end
+            end
+            if this.Element_type~=3 && this.ngps~=0
+                B_Matrix=zeros(2,this.STRUCTURE.Degrees_of_Freedom_Per_Element);
+                for m=1:this.number_of_nodes_per_element
+                    k=3*m;
+                    j=k-1;
+                    i=k-2;
+                    x=deriv(1,m); y=deriv(2,m);
+                    B_Matrix(2,i)=-x;
+                    B_Matrix(1,i)=-y;
+                    B_Matrix(1,k) = fun(m);
+                    B_Matrix(2,j) = fun(m);
+                end
+            end
+            % End function form_B_Matrix
+
+
+
+        end
+
+        % Form D Matrix
+        function [D_Matrix] = form_D_Matrix ()
+            %
+            % This function forms the elasticity matrix in a plate element
+            % concerning also shear and bending actions
+            %
+            if this.Element_type==3 && this.ngpb==0
+                c = this.Elastic_Modulus/(1.- this.Poisson_Ratio * this.Poisson_Ratio);
+                %
+                D_Matrix=c*[1 this.Poisson_Ratio 0. ;...
+                    this.Poisson_Ratio 1 0. ;...
+                    0. 0. .5*(1.- this.Poisson_Ratio)];
+
+            elseif this.Element_type~=3 && this.ngpb~=0
+                DR= this.Elastic_Modulus*(this.thickness_of_Plate^3)/(12*(1.-this.Poisson_Ratio*this.Poisson_Ratio));
+                %
+                D_Matrix=DR*[1 this.Poisson_Ratio 0. ;...
+                    this.Poisson_Ratio 1 0. ;...
+                    0. 0. (1.- this.Poisson_Ratio)/2] ;
+            elseif this.Element_type~=3 && this.ngps~=0
+                G= this.Elatic_Modulus/(2*(1. + this.Poisson_Ratio));
+                %
+                D_Matrix=G* [this.thickness_of_Plate     0 ;...
+                    0     this.thickness_of_Plate];
+            end
+
+        end
+
+        % Forces at nodes plates
+        function [MX, MY, MXY, QX, QY]=Forces_at_nodes_plate(Element_Forces)
+            % This function averages the stresses at the nodes
+            for k = 1:this.STRUCTURE.Number_of_Nodes
+                mx = 0. ; my = 0.; mxy = 0.; qx = 0.; qy = 0.;
+                ne = 0;
+                for iel = 1:this.STRUCTURE.Number_of_Elements
+                    for jel=1:this.STRUCTURE.number_of_nodes_per_element
+                        if this.connec(iel,jel) == k
+                            ne=ne+1;
+                            mx = mx + Element_Forces(iel,1);
+                            my = my + Element_Forces(iel,2);
+                            mxy = mxy + Element_Forces(iel,3);
+                            qx = qx + Element_Forces(iel,4);
+                            qy = qy + Element_Forces(iel,5);
+                        end
+                    end
+                end
+                MX(k,1) = mx/ne;
+                MY(k,1) = my/ne;
+                MXY(k,1) = mxy/ne;
+                QX(k,1) = qx/ne;
+                QY(k,1) = qy/ne;
+            end
+        end
+
+        %
+
     end
+end

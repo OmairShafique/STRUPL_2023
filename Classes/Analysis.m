@@ -18,6 +18,10 @@ classdef Analysis
         nodal_connectivity_values = []; %element and node connectivity values
         ngps = 0; % Number of Gauss Points Sheer
         ngpb = 0; % Number of Gauss Points Bending
+        Length_of_Element = 0;
+        Width_of_Element = 0;
+        Element_Type = 0; % Element Type i.e. Triangular, Square etc
+
 
         % Fracture Parameters
         sigma_t = 0;
@@ -48,18 +52,204 @@ classdef Analysis
     %% Methods
     methods
         % Constructor
-        function analysis = Analysis(thickness_of_plate,number_of_dof_per_node,dim,Boundary_Conditions,External_Load,nodal_coordinate_values,nodal_connectivity_values)
+        function analysis = Analysis(Length_of_Element,Width_of_Element,thickness_of_plate,number_of_dof_per_node,dim,Boundary_Conditions,External_Load,nodal_coordinate_values,nodal_connectivity_values,Element_Type)
             analysis.thickness_of_plate = thickness_of_plate;
             analysis.number_of_dof_per_node = number_of_dof_per_node;
             analysis.dim = dim;
             analysis.Boundary_Conditions = Boundary_Conditions;
             analysis.External_Load = External_Load;
+            analysis.Length_of_Element = Length_of_Element;
+            analysis.Width_of_Element = Width_of_Element;
 
-            analysis.STRUCTURE = Structure(nodal_coordinate_values,nodal_connectivity_values);
+            analysis.STRUCTURE = Structure(Length_of_Element,Width_of_Element,nodal_coordinate_values,nodal_connectivity_values,Element_Type);
+            
         end
 
         % Main Class where all logic will follow
         function Engine()
+            [nf,total_numbers_of_active_dof,nf_g] = Populating_nf();
+
+            [Load,Global_force_vector,Gravity_Load] = Populating_Load(nf_g);
+
+            curent_row = 1;
+
+            fg_gravity = fg_matrix_calculator();
+
+            deeb=formdeeb(this.Elastic_Modulus,this.Poissons_Ratio,this.thickness_of_plate); % Matrix of elastic properties for plate bending
+            dees=formdees(this.Elastic_Modulus,this.Poissons_Ratio,this.thickness_of_plate); % Matrix of elastic properties for plate shear
+
+            % 1.Form the matrix containing the abscissas and the weights of Gauss points
+            sampb = gauss(ngpb);
+            samps = gauss(ngps);
+
+            % 2. initialize the global stiffness matrix to zero
+            Global_stiffness_matrix = zeros(total_numbers_of_active_dof,total_numbers_of_active_dof);
+
+            for iel = 1:this.STRUCTURE.Number_of_Elements
+                if this.Element_Type == 3 && this.ngpb == 0
+                    [bee,fun_3,g,A,d_3] = elem_T3(iel);
+                    dee=formdeeb(Elastic_Modulus,Poissons_Ratio,thickness_of_plate);
+                    ke=thickness_of_plate*A*bee'*dee*bee; % Integrate stiffness matrix
+                    Global_stiffness_matrix=form_KK(Global_stiffness_matrix,ke, g);
+                end
+                [coord, g] = platelem_q4(iel); % coordinates of the nodes of element i,
+                % and its steering vector
+                keb = zeros(this.Degrees_of_Freedom_Per_Element,this.Degrees_of_Freedom_Per_Element) ; % Initialize the element bending
+                % stiffness matrix to zero
+                kes=zeros(this.Degrees_of_Freedom_Per_Element,this.Degrees_of_Freedom_Per_Element) ; % Initialize the element Shear
+                % stiffness matrix to zero
+
+                %--------------------------------------------------------------------------
+                % Integrate element Shear stiffness and assemble it in global matrix
+                %--------------------------------------------------------------------------
+                for ig=1: ngps
+                    wi = samps(ig,2);
+                    for jg=1: ngps
+                        wj=samps(jg,2);
+                        [der,fun] = fmquad(samps, this.Element_Type, this.dim, ig,jg); % Derivative of shape functions
+                        % in local coordinates
+                        jac=der'*coord;                    % Compute Jacobian matrix
+                        d=det(jac);                       % Compute determinant of
+                        % Jacobian matrix
+                        jac1=inv(jac);                    % Compute inverse of the
+                        % Jacobian
+                        deriv=jac1*der';                   % Derivative of shape functions
+                        % in global coordinates
+                        bees=formbees(deriv,fun,this.number_of_nodes_per_element,this.Degrees_of_Freedom_Per_Element); % Form matrix [B]
+                        kes=kes + (5/6)*d*wi*wj*bees'*dees*bees; % Integrate stiffness matrix
+                    end
+                end
+                Global_stiffness_matrix=form_KK(Global_stiffness_matrix,kes, g); % assemble global stiffness matrix
+            end
+
+            %% Displaying Results
+
+            delta = Global_stiffness_matrix\Global_force_vector;
+
+            if Element_Type == 3 %Parlas
+                for i=1: Number_of_Nodes %
+                    if nf_g(i,1) == 0 %
+                        x_disp =0.; %
+                    else
+                        x_disp = delta(nf_g(i,1)); %
+                    end
+                    %
+                    if nf_g(i,2) == 0 %
+                        y_disp = 0.; %
+                    else
+                        y_disp = delta(nf_g(i,2)); %
+                    end
+                    disp([i x_disp y_disp]) % Display displacements of each node
+                    DISP(i,:) = [ x_disp y_disp];
+                end
+            end
+
+            format short e
+            disp('node w_disp x_slope y_slope ') %
+            for i=1: this.STRUCTURE.Number_of_Nodes %
+                if nf_g(i,1) == 0 %
+                    w_disp =0.; %
+                else
+                    w_disp = delta(nf_g(i,1)); %
+                end
+                %
+                if nf_g(i,2) == 0 %
+                    x_slope = 0.; %
+                else
+                    x_slope = delta(nf_g(i,2)); %
+                end
+                %
+                if this.number_of_dof_per_node > 2
+                    if nf_g(i,3) == 0 %
+                        y_slope = 0.; %
+                        disp([i w_disp x_slope y_slope]) % Display displacements of each node
+                        DISP(i,:) = [ w_disp x_slope y_slope];
+                    else
+                        y_slope = delta(nf_g(i,3)); %
+                        disp([i w_disp x_slope y_slope]) % Display displacements of each node
+                        DISP(i,:) = [ w_disp x_slope y_slope];
+                    end
+                else
+                    disp([i w_disp x_slope]) % Display displacements of each node
+                    DISP(i,:) = [ w_disp x_slope];
+                end
+            end
+
+            disp('Calculate moments and shear forces the center of each element')
+            ngp=1; %
+            samp=gauss(ngp);
+            %
+            % Still needs Implementation
+            for i=1:Number_of_Elements
+                [coord,g] = platelem_q4(i); % coordinates of the nodes of element i,
+                % and its steering vector
+                eld=zeros(Degrees_of_Freedom_Per_Element,1); % Initialize element displacement to zero
+                for m=1:Degrees_of_Freedom_Per_Element %
+                    if g(m)==0 %
+                        eld(m)=0.; %
+                    else %
+                        eld(m)=delta(g(m)); % Retrieve element displacement from the
+                        % global displacement vector
+                    end
+                end
+                %
+                for ig=1: ngp
+                    wi = samp(ig,2);
+                    for jg=1: ngp
+                        wj=samp(jg,2);
+                        [der,fun] = fmquad(samp, Element_Type, dim, ig,jg,i); % Derivative of shape functions
+                        % in local coordinates
+                        jac=der'*coord; % Compute Jacobian matrix
+                        d=det(jac); % Compute the determinant of
+                        % Jacobian matrix
+                        jac1=inv(jac); % Compute inverse of the Jacobian
+                        deriv=jac1*der'; % Derivative of shape functions
+                        % in global coordinates
+                        %
+                        beeb=formbeeb(deriv,number_of_nodes_per_element,Degrees_of_Freedom_Per_Element); % Form matrix [B_b]
+                        chi_b = beeb*eld ; % compute bending curvatures
+                        Moment = deeb*chi_b ; % Compute moments
+                        bees=formbees(deriv,fun,number_of_nodes_per_element,Degrees_of_Freedom_Per_Element); % Form matrix [B_s]
+                        chi_s = bees*eld ; % compute shear curvatures
+                        Shear = dees*chi_s ; % Compute shear forces
+                    end
+                end
+                Element_Forces(i,:)=[Moment' Shear'];
+
+            end
+
+            [Row,Column] = size(Element_Forces);
+            zeros_row = zeros(1,Column);
+
+            clear Row Column
+
+            assignin('base','Element_Forces',Element_Forces)
+            Element_Forces = [zeros_row;Element_Forces];
+
+
+            W = DISP(:,1);
+            assignin('base','W',W)
+
+
+            [MX, MY, MXY, QX, QY] = Forces_at_nodes_plate(Element_Forces);
+
+            Results = [MX, MY, MXY, QX, QY];
+            figure;
+            plot(MX,QX);
+
+            assignin('base','Results',Results)
+
+            %
+            figure;
+            cmin = min(W);
+            cmax = max(W);
+            %       caxis([cmin cmax]);
+            patch('Faces',connec, 'Vertices', geom, 'FaceVertexCData',W,...
+                'Facecolor','interp','Marker','.');
+            colorbar;
+            toc
+
+
 
         end
 
@@ -342,6 +532,7 @@ classdef Analysis
                     g(l)=nf_g(this.connec(iel,k),j);
                 end
             end
+
 
 
 
@@ -841,8 +1032,8 @@ classdef Analysis
                 QY(k,1) = qy/ne;
             end
         end
-    
-        % 
-    
+
+        %
+
     end
 end

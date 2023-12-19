@@ -4,6 +4,7 @@ classdef Element
     properties
         Length_of_Element = 0;
         Width_of_Element = 0;
+        Nodes_per_Element
 
         NODES;
 
