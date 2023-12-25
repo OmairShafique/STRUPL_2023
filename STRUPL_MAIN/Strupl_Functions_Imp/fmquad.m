@@ -1,19 +1,19 @@
-function [der,fun] = fmquad(samp,Element_Type,dim, ig,jg,iel)%,lg
+function [der,fun] = fmquad(samp,analysisObject, ig,jg,iel)%,lg
 
-%% To be called only for Element_Type == 8 or == 4
+%% To be called only for analysisObject.Element_Type == 8 or == 4
 %
-global ngpb ngps connec geom
+
 
 % This function
 % returns the vector of the shape function and their
 % derivatives with respect to xi and eta at the gauss points for
 % an 8-nodded quadrilateral
 %
-% Element_Type=8;
-% Element_Type=3;
-% Element_Type=4;
-% dim=2;
-% dim=3;
+% analysisObject.Element_Type=8;
+% analysisObject.Element_Type=3;
+% analysisObject.Element_Type=4;
+% analysisObject.dim=2;
+% analysisObject.dim=3;
 xi=samp(ig,1);
 eta=samp(jg,1);
 % zeta=samp(lg,1);
@@ -26,10 +26,9 @@ xip=(1.+xi);
 
 %
 
-switch (Element_Type)
-
+switch (analysisObject.Element_Type)
     case (3) % for triangular element
-        if Element_Type==3 && dim==2 && ngpb ~=0 && ngps ~=0
+        if analysisObject.Element_Type==3 && analysisObject.dim==2 && analysisObject.ngpb ~=0 && analysisObject.ngps ~=0
             % shape functions
             fun(1) = 1. - xi - eta;
             fun(2) =  xi;
@@ -41,9 +40,9 @@ switch (Element_Type)
             der(2,1)= 1.; der(2,2)= 0;
             der(3,1)=0; der(3,2)=1;
         else
-            x1 = geom(connec(iel,1),1); y1 = geom(connec(iel,1),2);
-            x2 = geom(connec(iel,2),1); y2 = geom(connec(iel,2),2);
-            x3 = geom(connec(iel,3),1); y3 = geom(connec(iel,3),2);
+            x1 = analysisObject.geom(analysisObject.connec(iel,1),1); y1 = analysisObject.geom(analysisObject.connec(iel,1),2);
+            x2 = analysisObject.geom(analysisObject.connec(iel,2),1); y2 = analysisObject.geom(analysisObject.connec(iel,2),2);
+            x3 = analysisObject.geom(analysisObject.connec(iel,3),1); y3 = analysisObject.geom(analysisObject.connec(iel,3),2);
 
             A = (0.5)*det([1 x1 y1; ...
                 1 x2 y2; ...
@@ -92,7 +91,7 @@ switch (Element_Type)
 
     case (8) % for 8-noded Element
 
-        if Element_Type==8 && dim==2
+        if analysisObject.Element_Type==8 && analysisObject.dim==2
             % shape functions
             fun(1) = -0.25*xim*etam*(1.+ xi + eta);
             fun(2) = 0.5*(1.- xi^2)*etam;
@@ -113,7 +112,7 @@ switch (Element_Type)
             der(2,5)=0.25*xip*(xi+2.*eta); der(2,6)=0.5*(1.-xi^2);
             der(2,7)=-0.25*xim*(xi-2.*eta); der(2,8)=-1.*xim*eta;
         else
-            if Element_Type==8 && dim==3  %brick element
+            if analysisObject.Element_Type==8 && analysisObject.dim==3  %brick element
                 % shape functions
                 fun(1) = 0.125*xim*etam*zetam;
                 fun(2) = 0.125*xip*etam*zetam;

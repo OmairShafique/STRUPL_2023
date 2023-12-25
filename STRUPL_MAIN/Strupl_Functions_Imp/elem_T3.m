@@ -1,13 +1,13 @@
-function [bee,fun_3,g,A,d_3] = elem_T3(iel)
+function [bee,fun_3,g,A,d_3] = elem_T3(iel,analysisObject)
 %
 % This function returns the coordinates of the nodes of element i
 % and its steering vector
 %
 
 % if Element_Type==3
-    x1 = geom(connec(iel,1),1); y1 = geom(connec(iel,1),2);
-    x2 = geom(connec(iel,2),1); y2 = geom(connec(iel,2),2);
-    x3 = geom(connec(iel,3),1); y3 = geom(connec(iel,3),2);
+    x1 = analysisObject.geom(analysisObject.connec(iel,1),1); y1 = analysisObject.geom(analysisObject.connec(iel,1),2);
+    x2 = analysisObject.geom(analysisObject.connec(iel,2),1); y2 = analysisObject.geom(analysisObject.connec(iel,2),2);
+    x3 = analysisObject.geom(analysisObject.connec(iel,3),1); y3 = analysisObject.geom(analysisObject.connec(iel,3),2);
     %
     %
     d_3=det([1 x1 y1; ...
@@ -42,9 +42,9 @@ function [bee,fun_3,g,A,d_3] = elem_T3(iel)
     %
 
     l=0;
-    for k=1: number_of_nodes_per_element
-        for j=1:number_of_dof_per_node
+    for k=1: analysisObject.STRUCTURE.number_of_nodes_per_element
+        for j=1:analysisObject.number_of_dof_per_node
             l=l+1;
-            g(l)=nf_g(connec(iel,k),j);
+            g(l)=analysisObject.nf_g(analysisObject.connec(iel,k),j);
         end
     end

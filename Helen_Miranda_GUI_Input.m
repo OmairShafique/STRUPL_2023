@@ -142,7 +142,7 @@ analysis_main.is_rx_enabled = evalin('base','is_rx_enabled');
 analysis_main.is_ry_enabled = evalin('base','is_ry_enabled');
 analysis_main.is_rz_enabled = evalin('base','is_rz_enabled');
 
-analysis_main.Engine();
+analysis_main.Engine(analysis_main);
 
 % Helen_Miranda_4_Quadilateral_No_Inputs
 
