@@ -12,7 +12,7 @@ classdef Analysis
         Boundary_Conditions = []; %boundary conditions matrix input directly in the form of a matrix
         External_Load = []; %external load applied on the structure specifying node and the dof associated
         gamma = 0; %weight gamma
-        geom = []; %geometry of the strucutre matrix
+        geom = []; %analysisObject.geometry of the strucutre matrix
         connec = []; %.
         ngps = 0; % Number of Gauss Points Sheer
         ngpb = 0; % Number of Gauss Points Bending
@@ -49,8 +49,6 @@ classdef Analysis
     end
 
     %% Methods
-
-
     methods
         % Constructor
         function analysis = Analysis(Length_of_Element,Width_of_Element ...
@@ -69,8 +67,6 @@ classdef Analysis
 
             analysis.STRUCTURE = Structure(Length_of_Element,Width_of_Element,nodal_coordinate_values,nodal_connectivity_values,Element_Type);
         end
-
-        
     end
 
     methods (Static)
@@ -155,8 +151,8 @@ classdef Analysis
 
 
 
-            
-            
+
+
             %%
             %% LOADING
             Nodal_load = analysisObject.External_Load(:,1);
@@ -183,7 +179,7 @@ classdef Analysis
 
             deeb=formdeeb(analysisObject.Elastic_Modulus,analysisObject.poissons_ratio,analysisObject.thickness_of_plate); % Matrix of elastic properties for plate bending
             dees=formdees(analysisObject.Elastic_Modulus,analysisObject.poissons_ratio,analysisObject.thickness_of_plate); % Matrix of elastic properties for plate shear
-
+            %%
             %% STIFFNESS MATRIX
             % 1.Form the matrix containing the abscissas and the weights of Gauss points
             sampb = gauss(analysisObject.ngpb);
@@ -289,7 +285,7 @@ classdef Analysis
             %
             % Still needs Implementation
             for i=1:analysisObject.STRUCTURE.Number_of_Elements
-                [coord,g] = platelem_q4(i); % coordinates of the nodes of element i,
+                [coord,g] = platelem_q4(i,analysisObject); % coordinates of the nodes of element i,
                 % and its steering vector
                 eld=zeros(analysisObject.STRUCTURE.Degrees_of_Freedom_Per_Element,1); % Initialize element displacement to zero
                 for m=1:analysisObject.STRUCTURE.Degrees_of_Freedom_Per_Element %
@@ -339,28 +335,48 @@ classdef Analysis
             assignin('base','W',W)
 
 
-            [MX, MY, MXY, QX, QY] = Forces_at_nodes_plate(Element_Forces);
+            for k = 1:analysisObject.STRUCTURE.Number_of_Nodes
+                mx = 0. ; my = 0.; mxy = 0.; qx = 0.; qy = 0.;
+                ne = 0;
+                for iel = 1:analysisObject.STRUCTURE.Number_of_Elements
+                    for jel=1:analysisObject.STRUCTURE.number_of_nodes_per_element
+                        if analysisObject.connec(iel,jel) == k
+                            ne=ne+1;
+                            mx = mx + Element_Forces(iel,1);
+                            my = my + Element_Forces(iel,2);
+                            mxy = mxy + Element_Forces(iel,3);
+                            qx = qx + Element_Forces(iel,4);
+                            qy = qy + Element_Forces(iel,5);
+                        end
+                    end
+                end
+            end
+                MX(k,1) = mx/ne;
+                MY(k,1) = my/ne;
+                MXY(k,1) = mxy/ne;
+                QX(k,1) = qx/ne;
+                QY(k,1) = qy/ne;
 
-            Results = [MX, MY, MXY, QX, QY];
-            figure;
-            plot(MX,QX);
+                Results = [MX, MY, MXY, QX, QY];
+                figure;
+                plot(MX,QX);
 
-            assignin('base','Results',Results)
+                assignin('base','Results',Results)
 
-            %
-            figure;
-            cmin = min(W);
-            cmax = max(W);
-            %       caxis([cmin cmax]);
-            patch('Faces',connec, 'Vertices', geom, 'FaceVertexCData',W,...
-                'Facecolor','interp','Marker','.');
-            colorbar;
-            toc
+                %
+                figure;
+                cmin = min(W);
+                cmax = max(W);
+                %       caxis([cmin cmax]);
+                patch('Faces',analysisObject.connec, 'Vertices', analysisObject.geom, 'FaceVertexCData',W,...
+                    'Facecolor','interp','Marker','.');
+                colorbar;
+                toc
 
 
+
+            end
 
         end
-
-
-    end
 end
+    

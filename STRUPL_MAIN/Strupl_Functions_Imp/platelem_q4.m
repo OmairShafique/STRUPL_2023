@@ -23,7 +23,7 @@ g = 0;
 for k=1:analysisObject.STRUCTURE.number_of_nodes_per_element
     for j=1:analysisObject.number_of_dof_per_node
         l=l+1;
-        g(l)=nf_g(analysisObject.connec(i,k),j);
+        g(l)= analysisObject.nf_g(analysisObject.connec(i,k),j);
     end
 end
 
