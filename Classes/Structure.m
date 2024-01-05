@@ -47,6 +47,7 @@ classdef Structure
                 Elements(i) = element;
             end
             structure.ELEMENTS = Elements';
+            
         end
     end
 end

@@ -134,6 +134,8 @@ analysis_main.d_u = evalin('base','d_u');
 analysis_main.Percentage_Ultimate_Deformation_Maximum_Step = evalin('base','Percentage_Ultimate_Deformation_Maximum_Step');
 analysis_main.tol = evalin('base','tol');
 analysis_main.gamma = evalin('base','weigth_density');
+analysis_main.ngps = evalin('base','ngps');
+analysis_main.ngpb = evalin('base','ngpb');
 
 analysis_main.is_dx_enabled = evalin('base','is_dx_enabled');
 analysis_main.is_dy_enabled = evalin('base','is_dy_enabled');

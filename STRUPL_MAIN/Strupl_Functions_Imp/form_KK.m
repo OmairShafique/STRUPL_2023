@@ -1,8 +1,8 @@
-function[Global_stiffness_matrix]=form_KK(Global_stiffness_matrix, kg, g)
+function[Global_stiffness_matrix]=form_KK(Global_stiffness_matrix, kg, g,Degrees_of_Freedom_Per_Element)
 %
 % This function assembles the global stiffness matrix
 %
-global Degrees_of_Freedom_Per_Element
+
 % Degrees_of_Freedom_Per_Elementdof = 12;
 %
 % This function assembles the global stiffness matrix

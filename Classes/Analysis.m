@@ -65,14 +65,15 @@ classdef Analysis
             analysis.connec = nodal_connectivity_values;
             analysis.Element_Type = Element_Type;
 
-            analysis.STRUCTURE = Structure(Length_of_Element,Width_of_Element,nodal_coordinate_values,nodal_connectivity_values,Element_Type);
+            analysis.STRUCTURE = Structure(Length_of_Element,Width_of_Element,nodal_coordinate_values,nodal_connectivity_values,Element_Type); 
+            analysis.STRUCTURE.Degrees_of_Freedom_Per_Element = Element_Type * number_of_dof_per_node;
         end
     end
 
     methods (Static)
         % Main Class where all logic will follow
         function Engine(analysisObject)
-            %% Populating Nf
+            %% POPULATING NF
             nf = ones(analysisObject.STRUCTURE.Number_of_Nodes,analysisObject.number_of_dof_per_node); %nodal freedom matrix set to zeros
 
             node_number_where_active = analysisObject.Boundary_Conditions(:,1); %creating a single coumn matrix with node numbers where dof are released
@@ -145,13 +146,14 @@ classdef Analysis
                 end
             end
 
-
-
-
-
-
-
-
+            clear node_number_where_active
+            clear dof_x_displacement
+            clear dof_y_displacement
+            clear dof_z_displacement
+            clear dof_x_rotation
+            clear dof_y_rotation
+            clear dof_z_rotation
+            clear miss
 
             %%
             %% LOADING
@@ -175,7 +177,7 @@ classdef Analysis
             end
 
             % 2.0 Assign gravity load that generates body forces
-            fg_gravity = fg_matrix_calculator(analysisObject);
+            % fg_gravity = fg_matrix_calculator(analysisObject);
 
             deeb=formdeeb(analysisObject.Elastic_Modulus,analysisObject.poissons_ratio,analysisObject.thickness_of_plate); % Matrix of elastic properties for plate bending
             dees=formdees(analysisObject.Elastic_Modulus,analysisObject.poissons_ratio,analysisObject.thickness_of_plate); % Matrix of elastic properties for plate shear
@@ -218,15 +220,15 @@ classdef Analysis
                         % Jacobian
                         deriv=jac1*der';                   % Derivative of shape functions
                         % in global coordinates
-                        bees=formbees(deriv,fun,analysisObject.number_of_nodes_per_element,analysisObject.Degrees_of_Freedom_Per_Element); % Form matrix [B]
+                        bees=formbees(deriv,fun,analysisObject.STRUCTURE.number_of_nodes_per_element,analysisObject.STRUCTURE.Degrees_of_Freedom_Per_Element,analysisObject.number_of_dof_per_node); % Form matrix [B]
                         kes=kes + (5/6)*d*wi*wj*bees'*dees*bees; % Integrate stiffness matrix
                     end
                 end
-                Global_stiffness_matrix=form_KK(Global_stiffness_matrix,kes, g); % assemble global stiffness matrix
+                Global_stiffness_matrix=form_KK(Global_stiffness_matrix,kes, g,analysisObject.STRUCTURE.Degrees_of_Freedom_Per_Element); % assemble global stiffness matrix
             end
 
             %%
-            %% Displaying Results
+            %% DISPLAYING RESULTS
 
             delta = Global_stiffness_matrix\Global_force_vector;
 
@@ -313,7 +315,7 @@ classdef Analysis
                         beeb=formbeeb(deriv,analysisObject.STRUCTURE.number_of_nodes_per_element,analysisObject.STRUCTURE.Degrees_of_Freedom_Per_Element); % Form matrix [B_b]
                         chi_b = beeb*eld ; % compute bending curvatures
                         Moment = deeb*chi_b ; % Compute moments
-                        bees=formbees(deriv,fun,analysisObject.STRUCTURE.number_of_nodes_per_element,analysisObject.STRUCTURE.Degrees_of_Freedom_Per_Element); % Form matrix [B_s]
+                        bees=formbees(deriv,fun,analysisObject.STRUCTURE.number_of_nodes_per_element,analysisObject.STRUCTURE.Degrees_of_Freedom_Per_Element,analysisObject.number_of_dof_per_node); % Form matrix [B_s]
                         chi_s = bees*eld ; % compute shear curvatures
                         Shear = dees*chi_s ; % Compute shear forces
                     end
@@ -351,32 +353,27 @@ classdef Analysis
                     end
                 end
             end
-                MX(k,1) = mx/ne;
-                MY(k,1) = my/ne;
-                MXY(k,1) = mxy/ne;
-                QX(k,1) = qx/ne;
-                QY(k,1) = qy/ne;
+            MX(k,1) = mx/ne;
+            MY(k,1) = my/ne;
+            MXY(k,1) = mxy/ne;
+            QX(k,1) = qx/ne;
+            QY(k,1) = qy/ne;
 
-                Results = [MX, MY, MXY, QX, QY];
-                figure;
-                plot(MX,QX);
+            Results = [MX, MY, MXY, QX, QY];
+            figure;
+            plot(MX,QX);
 
-                assignin('base','Results',Results)
+            assignin('base','Results',Results)
 
-                %
-                figure;
-                cmin = min(W);
-                cmax = max(W);
-                %       caxis([cmin cmax]);
-                patch('Faces',analysisObject.connec, 'Vertices', analysisObject.geom, 'FaceVertexCData',W,...
-                    'Facecolor','interp','Marker','.');
-                colorbar;
-                toc
-
-
-
-            end
-
+            %
+            figure;
+            cmin = min(W);
+            cmax = max(W);
+            %       caxis([cmin cmax]);
+            patch('Faces',analysisObject.connec, 'Vertices', analysisObject.geom, 'FaceVertexCData',W,...
+                'Facecolor','interp','Marker','.');
+            colorbar;
+            toc
         end
+    end
 end
-    

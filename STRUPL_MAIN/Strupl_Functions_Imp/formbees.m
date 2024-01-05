@@ -1,6 +1,5 @@
-function[bees] = formbees(deriv,fun, number_of_nodes_per_element,Degrees_of_Freedom_Per_Element)
+function[bees] = formbees(deriv,fun, number_of_nodes_per_element,Degrees_of_Freedom_Per_Element,number_of_dof_per_node)
 %
-global number_of_dof_per_node
 % This function assembles the matrix [bees] from the
 % derivatives of the shape functions in global coordinates
 % for the shear action in a plate element
